@@ -128,6 +128,16 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
     boardRef.current?.focus();
   }
 
+  function handlePrevClue() {
+    engine.nextClue(true);
+    boardRef.current?.focus();
+  }
+
+  function handleNextClue() {
+    engine.nextClue();
+    boardRef.current?.focus();
+  }
+
   return (
     <div className="solver">
       <PuzzleHeader puzzle={puzzle} onReset={onReset} />
@@ -155,7 +165,11 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
         <CluePanel engine={engine} />
       </div>
 
-      <StatusBar engine={engine} />
+      <StatusBar
+        engine={engine}
+        onPrevClue={handlePrevClue}
+        onNextClue={handleNextClue}
+      />
 
       {solved && modalOpen && (
         <CompletionModal
