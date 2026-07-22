@@ -8,6 +8,7 @@ kept in an in-memory store for the lifetime of the process.
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 from typing import Dict
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -27,6 +28,22 @@ app.add_middleware(
 
 # Simple in-memory store: id -> Puzzle.
 _PUZZLES: Dict[str, Puzzle] = {}
+
+# The bundled sample puzzle, always available under the id "sample".
+_SAMPLE_PATH = Path(__file__).resolve().parent.parent / "samples" / "sample.puz"
+
+
+def _load_sample() -> None:
+    """Parse the bundled sample.puz (if present) and register it as "sample"."""
+    if not _SAMPLE_PATH.exists():
+        return
+    puzzle = parse_puz(_SAMPLE_PATH.read_bytes(), puzzle_id="sample")
+    _PUZZLES["sample"] = puzzle
+
+
+@app.on_event("startup")
+def _on_startup() -> None:
+    _load_sample()
 
 
 @app.get("/health")

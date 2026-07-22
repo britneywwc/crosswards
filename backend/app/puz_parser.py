@@ -1,7 +1,7 @@
 """Parser for the Across Lite `.puz` binary crossword format.
 
-The frontend never sees the binary format. This module converts a raw `.puz`
-byte string into a clean :class:`Puzzle` dictionary that matches the JSON model
+This module converts a raw `.puz` byte string into a
+ :class:`Puzzle` dictionary that matches the JSON model
 described in the project spec.
 
 Reference for the format:
@@ -76,7 +76,12 @@ def _read_string(data: bytes, start: int) -> tuple[str, int]:
     return data[start:end].decode(_ENCODING), end + 1
 
 
-def _starts_across(grid: List[List[str]], row: int, col: int, width: int) -> bool:
+def _starts_across(
+        grid: List[List[str]],
+        row: int,
+        col: int,
+        width: int
+) -> bool:
     if grid[row][col] == _BLACK:
         return False
     left_is_edge = col == 0 or grid[row][col - 1] == _BLACK
@@ -84,7 +89,12 @@ def _starts_across(grid: List[List[str]], row: int, col: int, width: int) -> boo
     return left_is_edge and has_right
 
 
-def _starts_down(grid: List[List[str]], row: int, col: int, height: int) -> bool:
+def _starts_down(
+        grid: List[List[str]],
+        row: int,
+        col: int,
+        height: int
+) -> bool:
     if grid[row][col] == _BLACK:
         return False
     top_is_edge = row == 0 or grid[row - 1][col] == _BLACK
@@ -104,7 +114,7 @@ def parse_puz(data: bytes, puzzle_id: str = "puzzle") -> Puzzle:
     width = data[_WIDTH_OFFSET]
     height = data[_HEIGHT_OFFSET]
     num_clues = int.from_bytes(
-        data[_NUM_CLUES_OFFSET : _NUM_CLUES_OFFSET + 2], "little"
+        data[_NUM_CLUES_OFFSET:_NUM_CLUES_OFFSET + 2], "little"
     )
 
     if width == 0 or height == 0:
@@ -123,10 +133,10 @@ def parse_puz(data: bytes, puzzle_id: str = "puzzle") -> Puzzle:
 
     # Build 2D character grids for numbering logic.
     solution_grid = [
-        list(solution_bytes[r * width : (r + 1) * width]) for r in range(height)
+        list(solution_bytes[r * width: (r + 1) * width]) for r in range(height)
     ]
     state_grid = [
-        list(state_bytes[r * width : (r + 1) * width]) for r in range(height)
+        list(state_bytes[r * width: (r + 1) * width]) for r in range(height)
     ]
 
     # Read the variable-length string section.
@@ -145,10 +155,16 @@ def parse_puz(data: bytes, puzzle_id: str = "puzzle") -> Puzzle:
             Cell(
                 row=r,
                 col=c,
-                solution="" if solution_grid[r][c] == _BLACK else solution_grid[r][c],
-                current=""
-                if state_grid[r][c] in (_BLACK, _EMPTY)
-                else state_grid[r][c],
+                solution=(
+                    ""
+                    if solution_grid[r][c] == _BLACK
+                    else solution_grid[r][c]
+                ),
+                current=(
+                    ""
+                    if state_grid[r][c] in (_BLACK, _EMPTY)
+                    else state_grid[r][c]
+                ),
                 isBlack=solution_grid[r][c] == _BLACK,
             )
             for c in range(width)
@@ -173,18 +189,36 @@ def parse_puz(data: bytes, puzzle_id: str = "puzzle") -> Puzzle:
 
             if starts_a:
                 clue_id = clue_index + 1
-                text = raw_clues[clue_index] if clue_index < len(raw_clues) else ""
+                text = (
+                    raw_clues[clue_index]
+                    if clue_index < len(raw_clues)
+                    else ""
+                )
                 across.append(
-                    Clue(id=clue_id, number=number, direction="across", clue=text)
+                    Clue(
+                        id=clue_id,
+                        number=number,
+                        direction="across",
+                        clue=text,
+                    )
                 )
                 _assign_across_ids(cells, r, c, width, clue_id)
                 clue_index += 1
 
             if starts_d:
                 clue_id = clue_index + 1
-                text = raw_clues[clue_index] if clue_index < len(raw_clues) else ""
+                text = (
+                    raw_clues[clue_index]
+                    if clue_index < len(raw_clues)
+                    else ""
+                )
                 down.append(
-                    Clue(id=clue_id, number=number, direction="down", clue=text)
+                    Clue(
+                        id=clue_id,
+                        number=number,
+                        direction="down",
+                        clue=text,
+                    )
                 )
                 _assign_down_ids(cells, r, c, height, clue_id)
                 clue_index += 1

@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
+import type { ReactNode } from "react";
 import type { Puzzle } from "../types";
 import { uploadPuzzle } from "../api/client";
 
 interface PuzzleLoaderProps {
   onLoaded: (puzzle: Puzzle) => void;
+  extra?: ReactNode;
 }
 
-export function PuzzleLoader({ onLoaded }: PuzzleLoaderProps) {
+export function PuzzleLoader({ onLoaded, extra }: PuzzleLoaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,6 +52,8 @@ export function PuzzleLoader({ onLoaded }: PuzzleLoaderProps) {
       >
         {loading ? "Loading…" : "Choose .puz file"}
       </button>
+
+      {extra}
 
       {error && <p className="loader__error">{error}</p>}
     </div>
