@@ -17,6 +17,8 @@ function CellComponent({ cell, isCursor, isHighlighted, onSelect }: CellProps) {
     "cell",
     isHighlighted ? "cell--highlighted" : "",
     isCursor ? "cell--cursor" : "",
+    cell.checkState === "correct" ? "cell--correct" : "",
+    cell.checkState === "incorrect" ? "cell--incorrect" : "",
   ]
     .filter(Boolean)
     .join(" ");

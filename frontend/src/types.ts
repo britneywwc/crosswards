@@ -16,6 +16,9 @@ export interface Cell {
 
   acrossId?: number;
   downId?: number;
+
+  // Runtime-only: set when the puzzle is checked. Not sent by the backend.
+  checkState?: "correct" | "incorrect";
 }
 
 export interface Clue {

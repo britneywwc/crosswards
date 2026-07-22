@@ -58,6 +58,11 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
       engine.nextClue(e.shiftKey);
       return;
     }
+    if (key === "Enter") {
+      e.preventDefault();
+      engine.nextClue();
+      return;
+    }
     if (key === " ") {
       e.preventDefault();
       engine.toggleDirection();
@@ -80,7 +85,7 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
   }
 
   function handleCheck() {
-    const result = engine.checkPuzzle();
+    const result = engine.markCheck();
     if (result.complete) {
       setSolved(true);
       setMessage("Solved! Nicely done.");
@@ -91,6 +96,13 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
       setSolved(false);
       setMessage("All filled, but something's not right.");
     }
+    // Return focus to the board so keyboard editing keeps working.
+    boardRef.current?.focus();
+  }
+
+  function handleToggleAutoCheck() {
+    engine.setAutoCheck(!engine.isAutoCheck());
+    boardRef.current?.focus();
   }
 
   return (
@@ -112,6 +124,7 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
       <StatusBar
         engine={engine}
         onCheck={handleCheck}
+        onToggleAutoCheck={handleToggleAutoCheck}
         message={message}
         solved={solved}
       />

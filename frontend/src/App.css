@@ -165,6 +165,14 @@
   background: #ffd84d;
 }
 
+.cell--correct .cell__letter {
+  color: #1a5fd0;
+}
+
+.cell--incorrect .cell__letter {
+  color: #d63030;
+}
+
 .cell__number {
   position: absolute;
   top: 1px;

@@ -19,6 +19,8 @@ export class CrosswordEngine {
   private cursor: Position;
   private direction: Direction = "across";
 
+  private autoCheck = false;
+
   private version = 0;
   private listeners = new Set<Listener>();
 
@@ -169,19 +171,51 @@ export class CrosswordEngine {
     const value = letter.toUpperCase();
     if (!/^[A-Z]$/.test(value)) return;
 
-    const cell = this.current();
-    if (cell.isBlack) return;
+    // Determine where to write. In check mode, locked (blue) cells are skipped
+    // so typing flows into the next editable cell of the word.
+    let target: Position | null = this.cursor;
+    if (this.puzzle.grid[target.row][target.col].isBlack) return;
+    if (this.isLocked(this.puzzle.grid[target.row][target.col])) {
+      target = this.nextEditable(this.cursor, 1);
+    }
+    if (!target) return; // no editable cell ahead
 
+    const cell = this.puzzle.grid[target.row][target.col];
     cell.current = value;
-    this.advanceWithinWord();
+    cell.checkState = this.autoCheck
+      ? cell.current === cell.solution
+        ? "correct"
+        : "incorrect"
+      : undefined;
+
+    // If that completes the word, jump to the next unfinished clue.
+    // Otherwise advance to the next editable cell, skipping locked cells.
+    this.cursor = target;
+    if (this.isWordFilled(target)) {
+      this.goToNextIncompleteClue();
+    } else {
+      this.cursor = this.nextEditable(target, 1) ?? target;
+    }
     this.notify();
   }
 
-  /** Backspace: clear the current cell, else step back and clear. */
+  /**
+   * Backspace behavior:
+   * - On a locked (blue) cell in check mode, hop left to the nearest red cell,
+   *   or the nearest blue cell if there are no red cells to the left.
+   * - Otherwise clear the current letter, or step back and clear the previous.
+   */
   deleteLetter(): void {
     const cell = this.current();
+
+    if (this.autoCheck && this.isLocked(cell)) {
+      this.hopLeftInWord();
+      return;
+    }
+
     if (cell.current !== "") {
       cell.current = "";
+      cell.checkState = undefined;
       this.notify();
       return;
     }
@@ -189,33 +223,64 @@ export class CrosswordEngine {
     const prev = this.stepWithinWord(-1);
     if (prev) {
       this.cursor = prev;
-      this.current().current = "";
+      const prevCell = this.current();
+      if (this.isLocked(prevCell)) {
+        // Landed on a locked cell — apply the hop-left rule from here.
+        this.hopLeftInWord();
+        return;
+      }
+      prevCell.current = "";
+      prevCell.checkState = undefined;
       this.notify();
+      return;
     }
+
+    // At the start of the word: jump back to the previous clue.
+    this.goToPreviousClue();
+    this.notify();
   }
 
   /** Delete: clear the current cell without moving. */
   clearCell(): void {
     const cell = this.current();
-    if (cell.current !== "") {
+    if (cell.current !== "" && !this.isLocked(cell)) {
       cell.current = "";
+      cell.checkState = undefined;
       this.notify();
     }
   }
 
-  /** Tab / Shift+Tab: jump to the next/previous clue's first open cell. */
+  /** A cell is locked when check mode is on and its letter is correct. */
+  private isLocked(cell: Cell): boolean {
+    return (
+      this.autoCheck && cell.current !== "" && cell.current === cell.solution
+    );
+  }
+
+  /**
+   * Tab / Shift+Tab / Enter: jump to the next (or previous) clue's first open
+   * cell. Clues are ordered Across first, then Down, and wrap around — so the
+   * clue after the last Across is the first Down, and vice versa.
+   */
   nextClue(reverse = false): void {
-    const list = this.direction === "across" ? this.puzzle.across : this.puzzle.down;
+    const ordered = [...this.puzzle.across, ...this.puzzle.down];
+    if (ordered.length === 0) return;
+
     const active = this.getActiveClue();
-    if (list.length === 0) return;
+    const index = active
+      ? ordered.findIndex(
+          (c) => c.id === active.id && c.direction === active.direction
+        )
+      : 0;
+    const nextIndex =
+      (index + (reverse ? -1 : 1) + ordered.length) % ordered.length;
+    const target = ordered[nextIndex];
 
-    let index = active ? list.findIndex((c) => c.id === active.id) : 0;
-    index = (index + (reverse ? -1 : 1) + list.length) % list.length;
-    const target = list[index];
-
-    const start = this.firstCellOfClue(target);
+    const start =
+      this.firstOpenCellOfClue(target) ?? this.firstCellOfClue(target);
     if (start) {
-      this.cursor = this.firstOpenCellOfClue(target) ?? start;
+      this.direction = target.direction;
+      this.cursor = start;
       this.notify();
     }
   }
@@ -234,6 +299,49 @@ export class CrosswordEngine {
     }
 
     return { filled, correct, complete: filled && correct };
+  }
+
+  /**
+   * Mark every filled white cell as correct/incorrect for display, then return
+   * the aggregate check result. Empty cells are left unmarked.
+   */
+  markCheck(): CheckResult {
+    for (const row of this.puzzle.grid) {
+      for (const cell of row) {
+        if (cell.isBlack) continue;
+        if (cell.current === "") {
+          cell.checkState = undefined;
+        } else {
+          cell.checkState =
+            cell.current === cell.solution ? "correct" : "incorrect";
+        }
+      }
+    }
+    this.notify();
+    return this.checkPuzzle();
+  }
+
+  /** Whether "always check" mode is on. */
+  isAutoCheck(): boolean {
+    return this.autoCheck;
+  }
+
+  /**
+   * Toggle "always check" mode. Turning it on marks every filled cell
+   * immediately; turning it off clears all check colors.
+   */
+  setAutoCheck(enabled: boolean): void {
+    this.autoCheck = enabled;
+    if (enabled) {
+      this.markCheck();
+      return;
+    }
+    for (const row of this.puzzle.grid) {
+      for (const cell of row) {
+        cell.checkState = undefined;
+      }
+    }
+    this.notify();
   }
 
   // --- Internal helpers -----------------------------------------------------
@@ -276,22 +384,100 @@ export class CrosswordEngine {
     return null;
   }
 
-  /** Move one step forward/back within the current word, if possible. */
-  private stepWithinWord(step: 1 | -1): Position | null {
+  /** Step one cell forward/back within the word from an arbitrary position. */
+  private step(from: Position, step: 1 | -1): Position | null {
     const delta: Position =
       this.direction === "across"
         ? { row: 0, col: step }
         : { row: step, col: 0 };
-    const row = this.cursor.row + delta.row;
-    const col = this.cursor.col + delta.col;
+    const row = from.row + delta.row;
+    const col = from.col + delta.col;
     if (!this.inBounds(row, col)) return null;
     if (this.puzzle.grid[row][col].isBlack) return null;
     return { row, col };
   }
 
-  private advanceWithinWord(): void {
-    const next = this.stepWithinWord(1);
-    if (next) this.cursor = next;
+  /** Move one step forward/back within the current word, if possible. */
+  private stepWithinWord(step: 1 | -1): Position | null {
+    return this.step(this.cursor, step);
+  }
+
+  /**
+   * Next editable (non-locked) cell within the word from `from` in `step`
+   * direction, skipping locked (blue) cells. Returns null if none remain.
+   */
+  private nextEditable(from: Position, step: 1 | -1): Position | null {
+    let pos = this.step(from, step);
+    while (pos) {
+      if (!this.isLocked(this.puzzle.grid[pos.row][pos.col])) return pos;
+      pos = this.step(pos, step);
+    }
+    return null;
+  }
+
+  /** Nearest cell to the left within the word matching a predicate. */
+  private nearestLeft(predicate: (cell: Cell) => boolean): Position | null {
+    let pos = this.step(this.cursor, -1);
+    while (pos) {
+      if (predicate(this.puzzle.grid[pos.row][pos.col])) return pos;
+      pos = this.step(pos, -1);
+    }
+    return null;
+  }
+
+  /** True when every cell of the word containing `pos` has a letter. */
+  private isWordFilled(pos: Position): boolean {
+    const cell = this.puzzle.grid[pos.row][pos.col];
+    const id = this.direction === "across" ? cell.acrossId : cell.downId;
+    if (id === undefined) return false;
+    for (const row of this.puzzle.grid) {
+      for (const c of row) {
+        const cid = this.direction === "across" ? c.acrossId : c.downId;
+        if (cid === id && c.current === "") return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Move the cursor to the first open cell of the next clue (in the current
+   * direction) that still has empty cells. Wraps around; if every clue is
+   * complete, the cursor is left where it is.
+   */
+  private goToNextIncompleteClue(): void {
+    const list =
+      this.direction === "across" ? this.puzzle.across : this.puzzle.down;
+    const active = this.getActiveClue();
+    if (!active || list.length === 0) return;
+
+    const startIndex = list.findIndex((c) => c.id === active.id);
+    for (let i = 1; i <= list.length; i++) {
+      const clue = list[(startIndex + i) % list.length];
+      const open = this.firstOpenCellOfClue(clue);
+      if (open) {
+        this.cursor = open;
+        return;
+      }
+    }
+  }
+
+  /** Hop left to the nearest red cell, else the nearest blue cell. */
+  private hopLeftInWord(): void {
+    const red = this.nearestLeft((c) => c.checkState === "incorrect");
+    if (red) {
+      this.cursor = red;
+      this.notify();
+      return;
+    }
+    const blue = this.nearestLeft((c) => this.isLocked(c));
+    if (blue) {
+      this.cursor = blue;
+      this.notify();
+      return;
+    }
+    // Nothing editable to the left in this word — go to the previous clue.
+    this.goToPreviousClue();
+    this.notify();
   }
 
   private firstCellOfClue(clue: Clue): Position | null {
@@ -311,6 +497,39 @@ export class CrosswordEngine {
       }
     }
     return null;
+  }
+
+  /** Last cell of a clue's word (rightmost for across, lowest for down). */
+  private lastCellOfClue(clue: Clue): Position | null {
+    const cells: Cell[] = [];
+    for (const row of this.puzzle.grid) {
+      for (const cell of row) {
+        const id = clue.direction === "across" ? cell.acrossId : cell.downId;
+        if (id === clue.id) cells.push(cell);
+      }
+    }
+    if (cells.length === 0) return null;
+    cells.sort((a, b) =>
+      clue.direction === "across" ? a.col - b.col : a.row - b.row
+    );
+    const last = cells[cells.length - 1];
+    return { row: last.row, col: last.col };
+  }
+
+  /**
+   * Move the cursor to the last cell of the previous clue (in the current
+   * direction). Wraps around; used by backspace at the start of a word.
+   */
+  private goToPreviousClue(): void {
+    const list =
+      this.direction === "across" ? this.puzzle.across : this.puzzle.down;
+    const active = this.getActiveClue();
+    if (!active || list.length === 0) return;
+
+    const startIndex = list.findIndex((c) => c.id === active.id);
+    const clue = list[(startIndex - 1 + list.length) % list.length];
+    const last = this.lastCellOfClue(clue);
+    if (last) this.cursor = last;
   }
 
   private firstOpenCellOfClue(clue: Clue): Position | null {
