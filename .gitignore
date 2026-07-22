@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+node_modules/
+*.pyc
+.DS_Store
+.vite/

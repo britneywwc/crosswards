@@ -1,0 +1,34 @@
+import type { CrosswordEngine } from "../engine/CrosswordEngine";
+import { Cell } from "./Cell";
+
+interface CrosswordGridProps {
+  engine: CrosswordEngine;
+}
+
+export function CrosswordGrid({ engine }: CrosswordGridProps) {
+  const puzzle = engine.getPuzzle();
+
+  return (
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: `repeat(${puzzle.width}, var(--cell-size))`,
+        gridTemplateRows: `repeat(${puzzle.height}, var(--cell-size))`,
+      }}
+      role="grid"
+      aria-label={`${puzzle.title} crossword grid`}
+    >
+      {puzzle.grid.map((row) =>
+        row.map((cell) => (
+          <Cell
+            key={`${cell.row}-${cell.col}`}
+            cell={cell}
+            isCursor={engine.isCursor(cell.row, cell.col)}
+            isHighlighted={engine.isHighlighted(cell.row, cell.col)}
+            onSelect={(r, c) => engine.selectCell(r, c)}
+          />
+        ))
+      )}
+    </div>
+  );
+}

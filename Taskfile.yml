@@ -1,0 +1,136 @@
+version: "3"
+
+vars:
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+  VENV: backend/.venv
+  PY: backend/.venv/bin/python
+  PIP: backend/.venv/bin/pip
+  UVICORN: backend/.venv/bin/uvicorn
+  API_PORT: "8000"
+
+# --- Setup --------------------------------------------------------------
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  setup:
+    desc: Install backend and frontend dependencies
+    cmds:
+      - task: setup:backend
+      - task: setup:frontend
+
+  setup:backend:
+    desc: Create the Python venv and install backend dependencies
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - python3 -m venv .venv
+      - .venv/bin/pip install --upgrade pip
+      - .venv/bin/pip install -r requirements.txt
+    status:
+      - test -x .venv/bin/uvicorn
+
+  setup:frontend:
+    desc: Install frontend npm dependencies
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm install
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules/.package-lock.json
+
+  # --- Run (development) ---------------------------------------------------
+
+  dev:
+    desc: Run backend API and frontend dev server together
+    deps:
+      - setup:backend
+      - setup:frontend
+    cmds:
+      - task: dev:parallel
+
+  dev:parallel:
+    internal: true
+    deps:
+      - dev:backend
+      - dev:frontend
+
+  dev:backend:
+    desc: Run the FastAPI backend with auto-reload
+    dir: "{{.BACKEND_DIR}}"
+    deps:
+      - setup:backend
+    cmds:
+      - .venv/bin/uvicorn app.main:app --reload --port {{.API_PORT}}
+
+  dev:frontend:
+    desc: Run the Vite dev server
+    dir: "{{.FRONTEND_DIR}}"
+    deps:
+      - setup:frontend
+    cmds:
+      - npm run dev
+
+  # --- Build ---------------------------------------------------------------
+
+  build:
+    desc: Build the frontend for production (backend needs no build step)
+    deps:
+      - setup:frontend
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run build
+
+  # --- Run (production preview) --------------------------------------------
+
+  start:
+    desc: Serve the built frontend preview and the backend API together
+    deps:
+      - build
+      - setup:backend
+    cmds:
+      - task: start:parallel
+
+  start:parallel:
+    internal: true
+    deps:
+      - start:backend
+      - start:frontend
+
+  start:backend:
+    desc: Run the backend API without auto-reload
+    dir: "{{.BACKEND_DIR}}"
+    deps:
+      - setup:backend
+    cmds:
+      - .venv/bin/uvicorn app.main:app --port {{.API_PORT}}
+
+  start:frontend:
+    desc: Preview the production frontend build
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run preview
+
+  # --- Quality -------------------------------------------------------------
+
+  test:
+    desc: Run backend tests
+    dir: "{{.BACKEND_DIR}}"
+    deps:
+      - setup:backend
+    cmds:
+      - .venv/bin/pip install -q pytest
+      - .venv/bin/python -m pytest tests/ -q
+
+  clean:
+    desc: Remove build artifacts, virtualenv, and node_modules
+    cmds:
+      - rm -rf {{.FRONTEND_DIR}}/dist {{.FRONTEND_DIR}}/node_modules
+      - rm -rf {{.VENV}}
+      - find {{.BACKEND_DIR}} -type d -name __pycache__ -prune -exec rm -rf {} +
