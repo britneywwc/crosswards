@@ -15,6 +15,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .puz_parser import PuzParseError, Puzzle, parse_puz
+from .sample_puzzle import build_sample_puzzle
 
 app = FastAPI(title="Crosswards API", version="0.1.0")
 
@@ -34,11 +35,21 @@ _SAMPLE_PATH = Path(__file__).resolve().parent.parent / "samples" / "sample.puz"
 
 
 def _load_sample() -> None:
-    """Parse the bundled sample.puz (if present) and register it as "sample"."""
-    if not _SAMPLE_PATH.exists():
-        return
-    puzzle = parse_puz(_SAMPLE_PATH.read_bytes(), puzzle_id="sample")
-    _PUZZLES["sample"] = puzzle
+    """Register the sample puzzle under the id "sample".
+
+    Prefer the bundled samples/sample.puz when present (local dev); otherwise
+    build it in memory so it also works in serverless deployments where data
+    files may not be bundled.
+    """
+    try:
+        if _SAMPLE_PATH.exists():
+            _PUZZLES["sample"] = parse_puz(
+                _SAMPLE_PATH.read_bytes(), puzzle_id="sample"
+            )
+            return
+    except Exception:
+        pass
+    _PUZZLES["sample"] = build_sample_puzzle()
 
 
 @app.on_event("startup")

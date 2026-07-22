@@ -1,6 +1,11 @@
 import type { Puzzle } from "../types";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// In production, call the API on the same origin ("/api/…") so Vercel's rewrite
+// routes it to the backend service. In dev, fall back to the local API server.
+// VITE_API_URL overrides both when set.
+const BASE_URL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? "" : "http://localhost:8000");
 
 /** Upload a `.puz` file to the backend and receive the parsed JSON model. */
 export async function uploadPuzzle(file: File): Promise<Puzzle> {
