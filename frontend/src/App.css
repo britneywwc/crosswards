@@ -111,6 +111,27 @@
 
 /* --- Toolbar (above the grid) --------------------------------------------- */
 
+.solver__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1px solid #e0e2e8;
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 64px;
+  text-align: center;
+}
+
 .toolbar {
   display: flex;
   gap: 10px;
@@ -159,6 +180,10 @@
   gap: 24px;
   align-items: flex-start;
   outline: none;
+}
+
+.solver__board--locked {
+  pointer-events: none;
 }
 
 @media (max-width: 720px) {
@@ -331,4 +356,90 @@
 .status-bar__text {
   color: #33404f;
   overflow-wrap: anywhere;
+}
+
+/* --- Completion modal ----------------------------------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 31, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+}
+
+.modal {
+  position: relative;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.modal__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #7a828e;
+  cursor: pointer;
+}
+
+.modal__title {
+  margin: 0 0 4px;
+  font-size: 26px;
+  color: #1f9d55;
+}
+
+.modal__time {
+  margin: 0 0 18px;
+  color: #33404f;
+  font-size: 16px;
+}
+
+.modal__time strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-grid {
+  display: grid;
+  gap: 0;
+  border: 2px solid #1a1a1a;
+  background: #1a1a1a;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 20px;
+}
+
+.mini-cell {
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  border: 1px solid #b6bac2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #1a1a1a;
+}
+
+.mini-cell--black {
+  background: #1a1a1a;
+}
+
+.modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
 }

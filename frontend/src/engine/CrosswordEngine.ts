@@ -283,6 +283,16 @@ export class CrosswordEngine {
     }
   }
 
+  /** True once at least one white cell has a letter (used to start the timer). */
+  hasAnyInput(): boolean {
+    for (const row of this.puzzle.grid) {
+      for (const cell of row) {
+        if (!cell.isBlack && cell.current !== "") return true;
+      }
+    }
+    return false;
+  }
+
   /** Check the whole puzzle: filled / correct / complete. */
   checkPuzzle(): CheckResult {
     let filled = true;

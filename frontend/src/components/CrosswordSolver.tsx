@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { Puzzle } from "../types";
 import { CrosswordEngine } from "../engine/CrosswordEngine";
 import { useCrosswordEngine } from "../hooks/useCrosswordEngine";
+import { formatDuration } from "../utils/time";
 import { PuzzleHeader } from "./PuzzleHeader";
 import { CrosswordGrid } from "./CrosswordGrid";
 import { CluePanel } from "./CluePanel";
 import { StatusBar } from "./StatusBar";
 import { PuzzleToolbar } from "./PuzzleToolbar";
+import { CompletionModal } from "./CompletionModal";
 
 interface CrosswordSolverProps {
   puzzle: Puzzle;
@@ -17,16 +19,54 @@ interface CrosswordSolverProps {
 export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
   // One engine instance per puzzle.
   const engine = useMemo(() => new CrosswordEngine(puzzle), [puzzle]);
-  useCrosswordEngine(engine);
+  const version = useCrosswordEngine(engine);
 
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // Timer: starts when the first cell is filled, stops when solved correctly.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [finishedAt, setFinishedAt] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const solved = finishedAt !== null;
+  const elapsedMs = Math.max(
+    0,
+    startedAt === null ? 0 : (finishedAt ?? now) - startedAt
+  );
 
   // Keep keyboard focus on the board so typing always works.
   useEffect(() => {
     boardRef.current?.focus();
   }, [puzzle]);
 
+  // After each engine change, start the timer on first input and stop it when
+  // the puzzle is completed correctly.
+  useEffect(() => {
+    if (finishedAt !== null) return;
+
+    if (startedAt === null && engine.hasAnyInput()) {
+      const startTime = Date.now();
+      setStartedAt(startTime);
+      setNow(startTime);
+    }
+
+    if (engine.checkPuzzle().complete) {
+      setFinishedAt(Date.now());
+      setModalOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+
+  // Tick the clock every second while the timer is running.
+  useEffect(() => {
+    if (startedAt === null || finishedAt !== null) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [startedAt, finishedAt]);
+
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (solved) return; // grid is locked once completed
     const { key } = e;
 
     if (key === "ArrowUp") return move(e, "up");
@@ -89,14 +129,19 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
     <div className="solver">
       <PuzzleHeader puzzle={puzzle} onReset={onReset} />
 
-      <PuzzleToolbar
-        engine={engine}
-        onCheck={handleCheck}
-        onToggleAutoCheck={handleToggleAutoCheck}
-      />
+      <div className="solver__topbar">
+        <PuzzleToolbar
+          engine={engine}
+          onCheck={handleCheck}
+          onToggleAutoCheck={handleToggleAutoCheck}
+        />
+        <div className="timer" role="timer" aria-label="Elapsed time">
+          {formatDuration(elapsedMs)}
+        </div>
+      </div>
 
       <div
-        className="solver__board"
+        className={"solver__board" + (solved ? " solver__board--locked" : "")}
         ref={boardRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
@@ -108,6 +153,15 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
       </div>
 
       <StatusBar engine={engine} />
+
+      {solved && modalOpen && (
+        <CompletionModal
+          puzzle={puzzle}
+          timeMs={elapsedMs}
+          onClose={() => setModalOpen(false)}
+          onNewPuzzle={onReset}
+        />
+      )}
     </div>
   );
 }
