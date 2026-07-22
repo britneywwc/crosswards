@@ -3,6 +3,7 @@ import type { KeyboardEvent } from "react";
 import type { Puzzle } from "../types";
 import { CrosswordEngine } from "../engine/CrosswordEngine";
 import { useCrosswordEngine } from "../hooks/useCrosswordEngine";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 import { formatDuration } from "../utils/time";
 import { PuzzleHeader } from "./PuzzleHeader";
 import { CrosswordGrid } from "./CrosswordGrid";
@@ -20,6 +21,8 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
   // One engine instance per puzzle.
   const engine = useMemo(() => new CrosswordEngine(puzzle), [puzzle]);
   const version = useCrosswordEngine(engine);
+
+  useKeyboardInset();
 
   const boardRef = useRef<HTMLDivElement>(null);
 

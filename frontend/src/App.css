@@ -192,11 +192,30 @@
     align-items: center;
   }
 
+  /* Leave room for the fixed clue bar at the bottom. */
+  .app {
+    padding-bottom: 84px;
+  }
+
   /* On mobile, hide the full Across/Down lists — the active clue is shown in
      the status bar below the grid. (Higher specificity so it wins over the
      base .clue-panel rule defined later in the file.) */
   .solver__board .clue-panel {
     display: none;
+  }
+
+  /* Pin the active-clue bar to the bottom of the screen so it stays visible.
+     It sits at the screen bottom whether the page scrolls or not, and rises
+     above the on-screen keyboard using the measured keyboard inset. */
+  .status-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--keyboard-inset, 0px);
+    z-index: 20;
+    border-radius: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 12px rgba(20, 24, 31, 0.12);
   }
 }
 
