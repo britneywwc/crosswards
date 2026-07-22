@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { CrosswordEngine } from "../engine/CrosswordEngine";
 import { Cell } from "./Cell";
 
@@ -11,10 +12,7 @@ export function CrosswordGrid({ engine }: CrosswordGridProps) {
   return (
     <div
       className="grid"
-      style={{
-        gridTemplateColumns: `repeat(${puzzle.width}, var(--cell-size))`,
-        gridTemplateRows: `repeat(${puzzle.height}, var(--cell-size))`,
-      }}
+      style={{ "--cols": puzzle.width } as CSSProperties}
       role="grid"
       aria-label={`${puzzle.title} crossword grid`}
     >
