@@ -208,7 +208,7 @@ export class CrosswordEngine {
   deleteLetter(): void {
     const cell = this.current();
 
-    if (this.autoCheck && this.isLocked(cell)) {
+    if (this.isLocked(cell)) {
       this.hopLeftInWord();
       return;
     }
@@ -250,11 +250,9 @@ export class CrosswordEngine {
     }
   }
 
-  /** A cell is locked when check mode is on and its letter is correct. */
+  /** A cell is locked once it has been checked and found correct. */
   private isLocked(cell: Cell): boolean {
-    return (
-      this.autoCheck && cell.current !== "" && cell.current === cell.solution
-    );
+    return cell.checkState === "correct";
   }
 
   /**

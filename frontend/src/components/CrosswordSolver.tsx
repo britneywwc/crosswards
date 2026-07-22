@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { KeyboardEvent } from "react";
 import type { Puzzle } from "../types";
 import { CrosswordEngine } from "../engine/CrosswordEngine";
@@ -7,6 +7,7 @@ import { PuzzleHeader } from "./PuzzleHeader";
 import { CrosswordGrid } from "./CrosswordGrid";
 import { CluePanel } from "./CluePanel";
 import { StatusBar } from "./StatusBar";
+import { PuzzleToolbar } from "./PuzzleToolbar";
 
 interface CrosswordSolverProps {
   puzzle: Puzzle;
@@ -19,21 +20,11 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
   useCrosswordEngine(engine);
 
   const boardRef = useRef<HTMLDivElement>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [solved, setSolved] = useState(false);
 
   // Keep keyboard focus on the board so typing always works.
   useEffect(() => {
     boardRef.current?.focus();
   }, [puzzle]);
-
-  // Automatically celebrate when the puzzle is completed correctly.
-  useEffect(() => {
-    if (engine.checkPuzzle().complete) {
-      setSolved(true);
-      setMessage("Solved! Nicely done.");
-    }
-  });
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     const { key } = e;
@@ -71,7 +62,6 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
     if (/^[a-zA-Z]$/.test(key)) {
       e.preventDefault();
       engine.enterLetter(key);
-      if (message) setMessage(null);
       return;
     }
   }
@@ -85,17 +75,7 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
   }
 
   function handleCheck() {
-    const result = engine.markCheck();
-    if (result.complete) {
-      setSolved(true);
-      setMessage("Solved! Nicely done.");
-    } else if (!result.filled) {
-      setSolved(false);
-      setMessage("Not finished yet — keep going.");
-    } else {
-      setSolved(false);
-      setMessage("All filled, but something's not right.");
-    }
+    engine.markCheck();
     // Return focus to the board so keyboard editing keeps working.
     boardRef.current?.focus();
   }
@@ -109,6 +89,12 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
     <div className="solver">
       <PuzzleHeader puzzle={puzzle} onReset={onReset} />
 
+      <PuzzleToolbar
+        engine={engine}
+        onCheck={handleCheck}
+        onToggleAutoCheck={handleToggleAutoCheck}
+      />
+
       <div
         className="solver__board"
         ref={boardRef}
@@ -121,13 +107,7 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
         <CluePanel engine={engine} />
       </div>
 
-      <StatusBar
-        engine={engine}
-        onCheck={handleCheck}
-        onToggleAutoCheck={handleToggleAutoCheck}
-        message={message}
-        solved={solved}
-      />
+      <StatusBar engine={engine} />
     </div>
   );
 }
