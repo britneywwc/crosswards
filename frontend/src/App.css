@@ -94,19 +94,37 @@
 
 .puzzle-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .puzzle-header__title {
   font-size: 24px;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.puzzle-header__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.puzzle-header__meta .button {
+  flex-shrink: 0;
 }
 
 .puzzle-header__author {
-  margin: 2px 0 0;
+  margin: 0;
   color: #55606e;
   font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Toolbar (above the grid) --------------------------------------------- */

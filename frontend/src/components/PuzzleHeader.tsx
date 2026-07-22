@@ -8,15 +8,15 @@ interface PuzzleHeaderProps {
 export function PuzzleHeader({ puzzle, onReset }: PuzzleHeaderProps) {
   return (
     <header className="puzzle-header">
-      <div>
-        <h1 className="puzzle-header__title">{puzzle.title}</h1>
-        {puzzle.author && (
-          <p className="puzzle-header__author">by {puzzle.author}</p>
-        )}
+      <h1 className="puzzle-header__title">{puzzle.title}</h1>
+      <div className="puzzle-header__meta">
+        <p className="puzzle-header__author">
+          {puzzle.author ? `by ${puzzle.author}` : ""}
+        </p>
+        <button type="button" className="button" onClick={onReset}>
+          Load another
+        </button>
       </div>
-      <button type="button" className="button" onClick={onReset}>
-        Load another
-      </button>
     </header>
   );
 }
