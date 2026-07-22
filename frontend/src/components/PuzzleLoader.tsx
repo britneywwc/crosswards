@@ -5,10 +5,10 @@ import { uploadPuzzle } from "../api/client";
 
 interface PuzzleLoaderProps {
   onLoaded: (puzzle: Puzzle) => void;
-  extra?: ReactNode;
+  featured?: ReactNode;
 }
 
-export function PuzzleLoader({ onLoaded, extra }: PuzzleLoaderProps) {
+export function PuzzleLoader({ onLoaded, featured }: PuzzleLoaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,8 +30,10 @@ export function PuzzleLoader({ onLoaded, extra }: PuzzleLoaderProps) {
     <div className="loader">
       <h1 className="loader__title">Crosswards</h1>
       <p className="loader__subtitle">
-        Upload an Across Lite <code>.puz</code> file to start solving.
+        Pick a crossword to solve, or import your own.
       </p>
+
+      {featured}
 
       <input
         ref={inputRef}
@@ -46,14 +48,12 @@ export function PuzzleLoader({ onLoaded, extra }: PuzzleLoaderProps) {
 
       <button
         type="button"
-        className="button button--primary"
+        className="button"
         disabled={loading}
         onClick={() => inputRef.current?.click()}
       >
-        {loading ? "Loading…" : "Choose .puz file"}
+        {loading ? "Loading…" : "Import .puz file"}
       </button>
-
-      {extra}
 
       {error && <p className="loader__error">{error}</p>}
     </div>

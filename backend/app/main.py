@@ -30,8 +30,15 @@ app.add_middleware(
 # Simple in-memory store: id -> Puzzle.
 _PUZZLES: Dict[str, Puzzle] = {}
 
-# The bundled sample puzzle, always available under the id "sample".
-_SAMPLE_PATH = Path(__file__).resolve().parent.parent / "samples" / "sample.puz"
+# Bundled sample puzzles, available under stable ids.
+_SAMPLES_DIR = Path(__file__).resolve().parent.parent / "samples"
+_SAMPLE_PATH = _SAMPLES_DIR / "sample.puz"
+
+# id -> filename for the bundled NYT puzzles served on the homepage.
+_BUNDLED_SAMPLES = {
+    "nyt": "NY Times - 20260722.puz",
+    "nyt-mini": "NY Times Mini - 20260722.puz",
+}
 
 
 def _load_sample() -> None:
@@ -52,9 +59,24 @@ def _load_sample() -> None:
     _PUZZLES["sample"] = build_sample_puzzle()
 
 
+def _load_bundled() -> None:
+    """Register the bundled NYT puzzles under their stable ids, if present."""
+    for puzzle_id, filename in _BUNDLED_SAMPLES.items():
+        path = _SAMPLES_DIR / filename
+        try:
+            if path.exists():
+                _PUZZLES[puzzle_id] = parse_puz(
+                    path.read_bytes(), puzzle_id=puzzle_id
+                )
+        except Exception:
+            # Skip any puzzle that fails to parse rather than failing startup.
+            pass
+
+
 @app.on_event("startup")
 def _on_startup() -> None:
     _load_sample()
+    _load_bundled()
 
 
 @app.get("/health")

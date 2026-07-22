@@ -7,10 +7,26 @@ export function HomePage() {
   return (
     <PuzzleLoader
       onLoaded={(puzzle) => navigate(`/puzzle/${puzzle.id}`)}
-      extra={
-        <p className="loader__sample">
-          or <Link to="/puzzle/sample">try the sample puzzle</Link>
-        </p>
+      featured={
+        <div className="loader__puzzles">
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => navigate("/puzzle/nyt")}
+          >
+            NYT Crossword
+          </button>
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => navigate("/puzzle/nyt-mini")}
+          >
+            NYT Mini
+          </button>
+          <p className="loader__sample">
+            or <Link to="/puzzle/sample">try the sample</Link>
+          </p>
+        </div>
       }
     />
   );
