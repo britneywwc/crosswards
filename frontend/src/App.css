@@ -212,10 +212,28 @@
   gap: 24px;
   align-items: flex-start;
   outline: none;
+  position: relative;
 }
 
 .solver__board--locked {
   pointer-events: none;
+}
+
+/* Visually hidden but still focusable so mobile browsers open the on-screen
+   keyboard. Avoid display:none / visibility:hidden, which would make it
+   unfocusable. */
+.solver__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 @media (max-width: 720px) {

@@ -4,9 +4,11 @@ import { Cell } from "./Cell";
 
 interface CrosswordGridProps {
   engine: CrosswordEngine;
+  /** Called after a cell is selected (used to focus the keyboard input). */
+  onCellSelect?: () => void;
 }
 
-export function CrosswordGrid({ engine }: CrosswordGridProps) {
+export function CrosswordGrid({ engine, onCellSelect }: CrosswordGridProps) {
   const puzzle = engine.getPuzzle();
 
   return (
@@ -23,7 +25,10 @@ export function CrosswordGrid({ engine }: CrosswordGridProps) {
             cell={cell}
             isCursor={engine.isCursor(cell.row, cell.col)}
             isHighlighted={engine.isHighlighted(cell.row, cell.col)}
-            onSelect={(r, c) => engine.selectCell(r, c)}
+            onSelect={(r, c) => {
+              engine.selectCell(r, c);
+              onCellSelect?.();
+            }}
           />
         ))
       )}

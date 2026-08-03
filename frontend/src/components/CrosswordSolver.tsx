@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import type { Puzzle } from "../types";
 import { CrosswordEngine } from "../engine/CrosswordEngine";
 import { useCrosswordEngine } from "../hooks/useCrosswordEngine";
@@ -25,6 +25,15 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
   useKeyboardInset();
 
   const boardRef = useRef<HTMLDivElement>(null);
+  // Hidden text input that holds focus so mobile browsers show the on-screen
+  // keyboard. All typing is captured here and forwarded to the engine.
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus the hidden input to summon the mobile keyboard. Must be called from
+  // within a user gesture (e.g. tapping a cell) for the keyboard to appear.
+  function focusInput() {
+    inputRef.current?.focus();
+  }
 
   // Timer: starts when the first cell is filled, stops when solved correctly.
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -38,9 +47,9 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
     startedAt === null ? 0 : (finishedAt ?? now) - startedAt
   );
 
-  // Keep keyboard focus on the board so typing always works.
+  // Keep keyboard focus on the hidden input so typing always works.
   useEffect(() => {
-    boardRef.current?.focus();
+    inputRef.current?.focus();
   }, [puzzle]);
 
   // After each engine change, start the timer on first input and stop it when
@@ -109,6 +118,18 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
     }
   }
 
+  // Fallback for mobile/IME keyboards that don't emit usable `keydown` letters:
+  // read whatever was typed into the hidden input and forward it to the engine.
+  function handleInput(e: FormEvent<HTMLInputElement>) {
+    const target = e.currentTarget;
+    const value = target.value;
+    target.value = ""; // reset so the next keystroke is captured fresh
+    if (solved) return;
+    for (const ch of value) {
+      if (/^[a-zA-Z]$/.test(ch)) engine.enterLetter(ch);
+    }
+  }
+
   function move(
     e: KeyboardEvent<HTMLDivElement>,
     dir: "up" | "down" | "left" | "right"
@@ -119,23 +140,23 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
 
   function handleCheck() {
     engine.markCheck();
-    // Return focus to the board so keyboard editing keeps working.
-    boardRef.current?.focus();
+    // Return focus to the input so keyboard editing keeps working.
+    focusInput();
   }
 
   function handleToggleAutoCheck() {
     engine.setAutoCheck(!engine.isAutoCheck());
-    boardRef.current?.focus();
+    focusInput();
   }
 
   function handlePrevClue() {
     engine.nextClue(true);
-    boardRef.current?.focus();
+    focusInput();
   }
 
   function handleNextClue() {
     engine.nextClue();
-    boardRef.current?.focus();
+    focusInput();
   }
 
   return (
@@ -156,12 +177,26 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
       <div
         className={"solver__board" + (solved ? " solver__board--locked" : "")}
         ref={boardRef}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
         role="application"
         aria-label="Crossword board — use arrow keys and letters to solve"
       >
-        <CrosswordGrid engine={engine} />
+        {/* Visually hidden input: holds focus to summon the mobile keyboard and
+            captures all typing, which is forwarded to the engine. */}
+        <input
+          ref={inputRef}
+          className="solver__input"
+          type="text"
+          inputMode="text"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          aria-hidden="true"
+          tabIndex={-1}
+          onKeyDown={handleKeyDown}
+          onInput={handleInput}
+        />
+        <CrosswordGrid engine={engine} onCellSelect={focusInput} />
         <CluePanel engine={engine} />
       </div>
 
