@@ -55,6 +55,28 @@ uvicorn app.main:app --reload
 
 Run tests: `python -m pytest tests/`
 
+## Fetching NYT puzzles
+
+Download the latest New York Times puzzle(s) as `.puz` files into
+`backend/samples/` using [`xword-dl`](https://github.com/thisisparker/xword-dl):
+
+```bash
+# One-time: add your NYT-S subscriber token (this file is gitignored)
+cp backend/config/xword-dl.yaml.example backend/config/xword-dl.yaml
+# edit backend/config/xword-dl.yaml and paste your NYT-S token
+
+# Download the daily puzzle (add outlets like `nytm` for the mini)
+./scripts/fetch-nyt.sh            # or: task fetch:nyt
+./scripts/fetch-nyt.sh nyt nytm   # or: task fetch:nyt -- nyt nytm
+```
+
+The token config (`backend/config/xword-dl.yaml`) is a **secret** and is never
+committed. For deployments, upload it to your platform separately and point the
+script at it with the `XWORD_DL_CONFIG` environment variable if it lives
+elsewhere. The script uses `uvx xword-dl` when `uv` is installed, otherwise a
+`xword-dl` on your `PATH` (`pip install xword-dl`).
+
+
 ## Running the frontend
 
 ```bash

@@ -117,6 +117,13 @@ tasks:
     cmds:
       - npm run preview
 
+  # --- Puzzles -------------------------------------------------------------
+
+  fetch:nyt:
+    desc: Download the latest NYT crossword(s) into backend/samples via xword-dl (needs backend/config/xword-dl.yaml). Pass outlets with `-- nyt nytm`.
+    cmds:
+      - ./scripts/fetch-nyt.sh {{.CLI_ARGS}}
+
   # --- Quality -------------------------------------------------------------
 
   test:

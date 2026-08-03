@@ -1,0 +1,19 @@
+# xword-dl configuration for downloading New York Times puzzles.
+#
+# Copy this file to `xword-dl.yaml` (same directory) and paste your NYT-S
+# subscriber token below. The real `xword-dl.yaml` is gitignored and MUST NOT
+# be committed — it contains a secret.
+#
+#   cp backend/config/xword-dl.yaml.example backend/config/xword-dl.yaml
+#
+# How to obtain your NYT-S token:
+#   - Run `uvx xword-dl nyt --authenticate` (prompts for your NYT login) and it
+#     will write the token into a config file for you, or
+#   - Copy the value of the `NYT-S` cookie from a logged-in nytimes.com session.
+#
+# Deployment: this file is not in git, so upload it to your deployment platform
+# separately (e.g. as a mounted secret file) and, if needed, point the script at
+# it with the XWORD_DL_CONFIG environment variable.
+
+nyt:
+  NYT-S: "replace-with-your-nyt-s-token"
