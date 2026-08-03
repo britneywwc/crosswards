@@ -158,14 +158,19 @@ export function CrosswordSolver({ puzzle, onReset }: CrosswordSolverProps) {
 
   return (
     <div className="solver">
-      <PuzzleHeader puzzle={puzzle} onReset={onReset} />
+      <PuzzleHeader
+        puzzle={puzzle}
+        onReset={onReset}
+        actions={
+          <PuzzleToolbar
+            engine={engine}
+            onCheck={handleCheck}
+            onToggleAutoCheck={handleToggleAutoCheck}
+          />
+        }
+      />
 
       <div className="solver__topbar">
-        <PuzzleToolbar
-          engine={engine}
-          onCheck={handleCheck}
-          onToggleAutoCheck={handleToggleAutoCheck}
-        />
         <div className="timer" role="timer" aria-label="Elapsed time">
           {formatDuration(elapsedMs)}
         </div>

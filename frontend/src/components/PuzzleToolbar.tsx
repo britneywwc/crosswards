@@ -19,23 +19,19 @@ export function PuzzleToolbar({
         type="button"
         className={"icon-button" + (autoCheck ? " icon-button--active" : "")}
         aria-pressed={autoCheck}
-        title={autoCheck ? "Always check: on" : "Always check: off"}
         aria-label="Toggle always check"
         onClick={onToggleAutoCheck}
       >
         <EyeIcon />
-        <span className="icon-button__label">Always check</span>
       </button>
 
       <button
         type="button"
         className="icon-button"
-        title="Check puzzle"
         aria-label="Check puzzle"
         onClick={onCheck}
       >
         <CheckIcon />
-        <span className="icon-button__label">Check puzzle</span>
       </button>
     </div>
   );
